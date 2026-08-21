@@ -22,6 +22,14 @@ function errorHandler(err, req, res, _next) {
   } else if (err.name === 'CastError') {
     statusCode = 400;
     message = `Invalid value for field "${err.path}"`;
+  } else if (err.name === 'MulterError') {
+    statusCode = 400;
+    message =
+      err.code === 'LIMIT_FILE_SIZE'
+        ? 'One or more uploaded files exceed the maximum allowed size.'
+        : err.code === 'LIMIT_FILE_COUNT' || err.code === 'LIMIT_UNEXPECTED_FILE'
+          ? 'Too many files uploaded at once.'
+          : `Upload failed: ${err.message}`;
   } else if (err.code === 11000) {
     statusCode = 409;
     const field = Object.keys(err.keyValue || {})[0] || 'field';

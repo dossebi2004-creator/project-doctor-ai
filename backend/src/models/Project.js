@@ -42,6 +42,10 @@ const projectSchema = new mongoose.Schema(
       trim: true,
       default: null,
     },
+    repoMeta: {
+      type: mongoose.Schema.Types.Mixed,
+      default: null,
+    },
     files: {
       type: [fileSchema],
       validate: {

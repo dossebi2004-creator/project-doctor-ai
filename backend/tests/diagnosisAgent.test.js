@@ -2,77 +2,151 @@ process.env.NODE_ENV = 'test';
 process.env.JWT_SECRET = 'test-secret';
 process.env.GEMINI_API_KEY = 'test-key';
 
-const { normalizeDiagnosis } = require('../src/services/ai/diagnosisAgent');
+const { normalizeFindings } = require('../src/services/ai/diagnosisAgent');
 const ApiError = require('../src/utils/ApiError');
 
-describe('normalizeDiagnosis', () => {
+describe('normalizeFindings', () => {
   it('normalizes a well-formed AI response', () => {
     const parsed = {
-      summary: 'The project is reasonably solid but has a few security gaps.',
-      healthScore: 72,
       findings: [
         {
           title: 'Missing input validation',
-          category: 'security',
-          severity: 'high',
+          category: 'SECURITY',
+          severity: 'HIGH',
           file: 'src/routes/user.js',
-          explanation: 'User input is passed directly to the database query.',
-          recommendation: 'Validate and sanitize all inputs before use.',
+          description: 'User input is passed directly to the database query.',
+          evidence: 'db.query(`SELECT * FROM users WHERE id = ${req.params.id}`)',
+          reasoning: 'This allows SQL injection.',
+          recommendation: 'Use parameterized queries.',
+          estimatedImpact: 'Full database compromise possible.',
         },
       ],
     };
 
-    const result = normalizeDiagnosis(parsed);
+    const result = normalizeFindings(parsed);
 
-    expect(result.summary).toBe(parsed.summary);
-    expect(result.healthScore).toBe(72);
-    expect(result.findings).toHaveLength(1);
-    expect(result.findings[0].category).toBe('security');
-  });
-
-  it('clamps an out-of-range health score', () => {
-    const result = normalizeDiagnosis({ summary: 'ok', healthScore: 150, findings: [] });
-    expect(result.healthScore).toBe(100);
-
-    const result2 = normalizeDiagnosis({ summary: 'ok', healthScore: -20, findings: [] });
-    expect(result2.healthScore).toBe(0);
+    expect(result).toHaveLength(1);
+    expect(result[0].category).toBe('SECURITY');
+    expect(result[0].severity).toBe('HIGH');
+    expect(result[0].recommendation).toContain('parameterized');
   });
 
   it('defaults an invalid category/severity to safe fallbacks', () => {
-    const result = normalizeDiagnosis({
-      summary: 'ok',
-      healthScore: 50,
+    const result = normalizeFindings({
       findings: [
         {
           title: 'Weird finding',
           category: 'not-a-real-category',
           severity: 'catastrophic',
-          explanation: 'Some explanation',
+          description: 'Some description',
           recommendation: 'Some recommendation',
         },
       ],
     });
 
-    expect(result.findings[0].category).toBe('maintainability');
-    expect(result.findings[0].severity).toBe('medium');
+    expect(result[0].category).toBe('CODE_QUALITY');
+    expect(result[0].severity).toBe('MEDIUM');
   });
 
-  it('drops findings missing required explanation/recommendation', () => {
-    const result = normalizeDiagnosis({
-      summary: 'ok',
-      healthScore: 50,
-      findings: [{ title: 'Incomplete finding', category: 'bug', severity: 'low' }],
+  it('drops findings missing required description/recommendation', () => {
+    const result = normalizeFindings({
+      findings: [{ title: 'Incomplete finding', category: 'BUG', severity: 'LOW' }],
     });
 
-    expect(result.findings).toHaveLength(0);
+    expect(result).toHaveLength(0);
   });
 
-  it('throws when summary is missing', () => {
-    expect(() => normalizeDiagnosis({ healthScore: 50, findings: [] })).toThrow(ApiError);
+  it('returns an empty array when findings is missing entirely', () => {
+    const result = normalizeFindings({});
+    expect(result).toEqual([]);
+  });
+
+  it('ignores non-object entries in the findings array', () => {
+    const result = normalizeFindings({ findings: [null, 'not an object', 42] });
+    expect(result).toEqual([]);
   });
 
   it('throws when the parsed value is not an object', () => {
-    expect(() => normalizeDiagnosis(null)).toThrow(ApiError);
-    expect(() => normalizeDiagnosis('a string')).toThrow(ApiError);
+    expect(() => normalizeFindings(null)).toThrow(ApiError);
+    expect(() => normalizeFindings('a string')).toThrow(ApiError);
+  });
+
+  it('truncates overly long fields rather than rejecting the finding', () => {
+    const longText = 'x'.repeat(5000);
+    const result = normalizeFindings({
+      findings: [
+        {
+          title: longText,
+          category: 'BUG',
+          severity: 'LOW',
+          description: longText,
+          recommendation: longText,
+        },
+      ],
+    });
+
+    expect(result[0].title.length).toBeLessThanOrEqual(200);
+    expect(result[0].description.length).toBeLessThanOrEqual(2000);
+    expect(result[0].recommendation.length).toBeLessThanOrEqual(2000);
+  });
+});
+
+describe('diagnoseProject (deterministic-only fallback)', () => {
+  afterEach(() => {
+    jest.resetModules();
+    jest.dontMock('../src/services/ai/geminiClient');
+  });
+
+  it('falls back to a deterministic-only result when the AI call fails, without throwing', async () => {
+    jest.resetModules();
+    jest.doMock('../src/services/ai/geminiClient', () => ({
+      generateContent: jest.fn().mockRejectedValue(new Error('provider unreachable')),
+    }));
+    // eslint-disable-next-line global-require
+    const { diagnoseProject } = require('../src/services/ai/diagnosisAgent');
+
+    const result = await diagnoseProject({
+      projectName: 'Demo',
+      description: '',
+      files: [{ path: 'index.js', content: 'console.log("hi");' }],
+    });
+
+    expect(result.aiSucceeded).toBe(false);
+    expect(result.aiError).toBeTruthy();
+    expect(result.findings).toEqual([]);
+    expect(typeof result.healthScore).toBe('number');
+    expect(result.healthScore).toBeGreaterThanOrEqual(0);
+    expect(result.modelUsed).toMatch(/deterministic-only/);
+  });
+
+  it('returns aiSucceeded: true with findings when the AI call succeeds', async () => {
+    jest.resetModules();
+    jest.doMock('../src/services/ai/geminiClient', () => ({
+      generateContent: jest.fn().mockResolvedValue(
+        JSON.stringify({
+          findings: [
+            {
+              title: 'No tests',
+              category: 'TESTING',
+              severity: 'MEDIUM',
+              description: 'No test files found.',
+              recommendation: 'Add unit tests.',
+            },
+          ],
+        })
+      ),
+    }));
+    // eslint-disable-next-line global-require
+    const { diagnoseProject } = require('../src/services/ai/diagnosisAgent');
+
+    const result = await diagnoseProject({
+      projectName: 'Demo',
+      description: '',
+      files: [{ path: 'index.js', content: 'console.log("hi");' }],
+    });
+
+    expect(result.aiSucceeded).toBe(true);
+    expect(result.findings).toHaveLength(1);
+    expect(result.modelUsed).not.toMatch(/deterministic-only/);
   });
 });

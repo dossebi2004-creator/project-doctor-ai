@@ -303,6 +303,245 @@ textarea:focus {
   background: #fee2e2;
   color: #991b1b;
 }
+.status-deterministic {
+  background: #e0e7ff;
+  color: #3730a3;
+}
+
+/* Project header (diagnosis report) */
+.project-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--color-border);
+}
+.project-header-name {
+  margin: 0 0 4px;
+}
+.project-header-meta {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  gap: 4px;
+  font-size: 0.85rem;
+}
+
+/* Health interpretation + report header actions */
+.health-interpretation {
+  font-weight: 700;
+  margin: 4px 0 0;
+}
+.health-interpretation-good {
+  color: var(--color-success);
+}
+.health-interpretation-medium {
+  color: #b45309;
+}
+.health-interpretation-poor {
+  color: var(--color-danger);
+}
+.report-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+/* Notice banner (deterministic-only, etc.) */
+.notice-banner {
+  background: #eef2ff;
+  border: 1px solid #c7d2fe;
+  color: #3730a3;
+  border-radius: var(--radius);
+  padding: 10px 14px;
+  font-size: 0.9rem;
+}
+
+/* Dimension scores */
+.dimension-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 14px;
+}
+.dimension-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 14px;
+}
+.dimension-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+.dimension-card-header h3 {
+  margin: 0;
+  font-size: 0.95rem;
+}
+.dimension-score {
+  font-weight: 800;
+  font-size: 1.1rem;
+}
+.dimension-score-good {
+  color: var(--color-success);
+}
+.dimension-score-medium {
+  color: #b45309;
+}
+.dimension-score-poor {
+  color: var(--color-danger);
+}
+.dimension-reasons {
+  margin: 8px 0 0;
+  padding-left: 18px;
+  font-size: 0.82rem;
+  color: var(--color-muted);
+}
+.dimension-reasons li {
+  margin-bottom: 2px;
+}
+
+/* Project intelligence */
+.intelligence-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 12px;
+}
+.intelligence-card {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 12px 14px;
+}
+.intelligence-card h4 {
+  margin: 0 0 4px;
+  font-size: 0.8rem;
+  text-transform: uppercase;
+  letter-spacing: 0.03em;
+  color: var(--color-muted);
+}
+.intelligence-card p {
+  margin: 0;
+  font-size: 0.9rem;
+}
+
+/* Findings evidence/impact */
+.finding-evidence code {
+  background: #f3f4f6;
+  padding: 1px 4px;
+  border-radius: 4px;
+  font-size: 0.85rem;
+}
+.finding-impact {
+  color: var(--color-muted);
+}
+
+/* Action plan */
+.action-plan-group {
+  margin-bottom: 18px;
+}
+.action-plan-heading {
+  display: inline-block;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 0.9rem;
+}
+.action-plan-heading.priority-P0 {
+  background: #fee2e2;
+  color: #991b1b;
+}
+.action-plan-heading.priority-P1 {
+  background: #fef3c7;
+  color: #92400e;
+}
+.action-plan-heading.priority-P2 {
+  background: #dbeafe;
+  color: #1e40af;
+}
+.action-plan-heading.priority-P3 {
+  background: #f3f4f6;
+  color: #374151;
+}
+.action-plan-list {
+  list-style: none;
+  padding: 0;
+  margin: 8px 0 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+.action-plan-list li {
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 10px 12px;
+  font-size: 0.9rem;
+}
+.action-plan-list p {
+  margin: 4px 0 0;
+  color: var(--color-muted);
+}
+
+/* Diagnosis list links (project detail) */
+.diagnosis-list-link {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+/* Upload dropzone */
+.upload-section {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 8px;
+}
+.dropzone {
+  border: 2px dashed var(--color-border);
+  border-radius: var(--radius);
+  padding: 28px 16px;
+  text-align: center;
+  cursor: pointer;
+  background: var(--color-surface);
+}
+.dropzone:hover,
+.dropzone:focus-visible {
+  border-color: var(--color-primary);
+  outline: none;
+}
+.dropzone-active {
+  border-color: var(--color-primary);
+  background: #eff6ff;
+}
+.dropzone p {
+  margin: 4px 0;
+}
+.upload-file-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+.upload-file-list li {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--color-surface);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius);
+  padding: 8px 12px;
+  font-size: 0.88rem;
+}
+.upload-file-list li .btn-link {
+  margin-left: auto;
+  font-size: 0.82rem;
+}
 
 /* File / diagnosis lists */
 .file-list,

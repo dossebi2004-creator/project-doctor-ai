@@ -42,7 +42,11 @@ export default function ProjectDetail() {
       const res = await api.post(`/projects/${id}/diagnoses`);
       navigate(`/diagnoses/${res.data.data.diagnosis._id}`);
     } catch (err) {
-      setRunError(err.message);
+      if (err.status === 409) {
+        setRunError('A diagnosis is already running for this project. Please wait for it to finish.');
+      } else {
+        setRunError(err.message);
+      }
       setRunning(false);
     }
   };
@@ -93,8 +97,15 @@ export default function ProjectDetail() {
           <ul className="diagnosis-list">
             {diagnoses.map((d) => (
               <li key={d._id}>
-                <Link to={`/diagnoses/${d._id}`}>
-                  Health score {d.healthScore}/100 — {new Date(d.createdAt).toLocaleString()}
+                <Link to={`/diagnoses/${d._id}`} className="diagnosis-list-link">
+                  <span>
+                    Health score {d.healthScore}/100 — {new Date(d.createdAt).toLocaleString()}
+                  </span>
+                  {d.status !== 'completed' && (
+                    <span className={`status-badge status-${d.status === 'deterministic_only' ? 'deterministic' : 'failed'}`}>
+                      {d.status === 'deterministic_only' ? 'Deterministic-only' : 'Failed'}
+                    </span>
+                  )}
                 </Link>
               </li>
             ))}
